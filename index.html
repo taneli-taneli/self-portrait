@@ -1,0 +1,888 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Pixelator</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f1f0eb;
+  color: #171717;
+  font-family: Arial, sans-serif;
+}
+
+body.intro-active {
+  min-height: 100vh;
+  background: #f1f0eb;
+}
+
+body.intro-active header,
+body.intro-active main {
+  display: none;
+}
+
+.intro {
+  min-height: 100vh;
+  padding: 22px 30px 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.intro-top,
+.intro-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.intro-main {
+  width: min(1120px, 100%);
+  margin: auto;
+  padding: 55px 0;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(35px, 7vw, 100px);
+  align-items: center;
+}
+
+.intro-art {
+  min-height: 470px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #78c8eb;
+}
+
+.intro-art::before,
+.intro-art::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: #f1f0eb;
+  box-shadow: 18px 0 #f1f0eb, 0 18px #f1f0eb, 18px 18px #f1f0eb;
+  opacity: .8;
+}
+
+.intro-art::before {
+  top: 28px;
+  left: 28px;
+}
+
+.intro-art::after {
+  right: 48px;
+  bottom: 46px;
+}
+
+.cover-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  z-index: 1;
+  image-rendering: pixelated;
+  transition: opacity .16s ease;
+}
+
+.cover-photo.is-active {
+  opacity: 1;
+}
+
+.intro-sequencing .intro-actions {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.art-caption {
+  position: absolute;
+  left: 24px;
+  bottom: 20px;
+  z-index: 2;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.intro-copy {
+  max-width: 430px;
+}
+
+.intro-kicker {
+  margin: 0 0 20px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.intro-copy h1 {
+  font-size: clamp(54px, 8vw, 96px);
+  line-height: .82;
+  letter-spacing: -.08em;
+  margin: 0 0 26px;
+}
+
+.intro-copy p {
+  max-width: 330px;
+  margin: 0 0 30px;
+  font-size: 14px;
+}
+
+.intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.intro-actions button {
+  min-width: 175px;
+}
+
+#introStatus {
+  min-height: 18px;
+  margin-top: 16px;
+  color: #666;
+  font-size: 12px;
+}
+
+.intro-bottom {
+  color: #777;
+  letter-spacing: 1px;
+}
+
+header {
+  padding: 22px 30px;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+main {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr;
+  gap: 35px;
+}
+
+.stage {
+  background: #78c8eb;
+  border-radius: 18px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  position: relative;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+h1 {
+  font-size: 55px;
+  line-height: .9;
+  letter-spacing: -3px;
+  margin: 0 0 15px;
+}
+
+p {
+  color: #777;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.control {
+  border-top: 1px solid #ccc;
+  padding-top: 15px;
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: black;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+button, .upload {
+  padding: 14px;
+  border: 1px solid black;
+  border-radius: 30px;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.primary {
+  background: black;
+  color: white;
+}
+
+button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+#status {
+  font-size: 12px;
+  color: #777;
+}
+
+@media(max-width: 750px) {
+  .intro {
+    padding: 20px;
+  }
+
+  .intro-main {
+    grid-template-columns: 1fr;
+    gap: 35px;
+    padding: 40px 0;
+  }
+
+  .intro-art {
+    min-height: 320px;
+  }
+
+  .intro-copy h1 {
+    font-size: 64px;
+  }
+
+  .intro-top span:last-child,
+  .intro-bottom span:last-child {
+    display: none;
+  }
+
+  main {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body class="intro-active intro-sequencing">
+
+<section class="intro" id="intro" aria-labelledby="introTitle">
+  <div class="intro-top">
+    <span>FACE / PIXELATOR</span>
+    <span>Digital portrait study — 001</span>
+  </div>
+
+  <div class="intro-main">
+    <div class="intro-art" aria-label="Alternating pixelated portraits">
+      <canvas class="cover-photo" id="coverPhoto" aria-label="Pixelated portrait from taneli2.jpeg"></canvas>
+      <canvas class="cover-photo" id="coverPhotoTwo" aria-label="Pixelated portrait from taneli.jpeg"></canvas>
+      <canvas class="cover-photo" id="coverPhotoThree" aria-label="Pixelated portrait from taneli3.jpeg"></canvas>
+      <span class="art-caption" id="coverCaption">taneli.jpeg</span>
+    </div>
+
+    <div class="intro-copy">
+      <p class="intro-kicker">A digital portrait experiment</p>
+      <h1 id="introTitle">PIXEL<br>YOURSELF.</h1>
+      <p>Turn your face into a living field of pixels. Start with your camera, or choose a portrait to begin.</p>
+      <div class="intro-actions">
+        <button class="primary" id="introCamera" disabled>Open camera</button>
+        <button id="introUpload" disabled>Choose a photo</button>
+      </div>
+      <div id="introStatus" role="status" aria-live="polite">Pixelating the portrait…</div>
+    </div>
+  </div>
+
+  <div class="intro-bottom">
+    <span>Make yourself a little abstract.</span>
+    <span>Camera access is optional</span>
+  </div>
+</section>
+
+<header>
+  <span>FACE / PIXELATOR</span>
+  <span>DIGITAL PORTRAIT STUDY — 001</span>
+</header>
+
+<main>
+
+  <section>
+    <div class="stage">
+      <canvas id="output" width="640" height="480"></canvas>
+      <div id="placeholder">
+        START CAMERA OR UPLOAD A PORTRAIT
+      </div>
+    </div>
+  </section>
+
+  <section class="controls">
+
+    <div>
+      <h1>PIXEL<br>YOURSELF.</h1>
+      <p>
+        A digital face pixelation experiment.
+        Use your camera or upload an image.
+        Adjust the pixel size to change the effect.
+      </p>
+    </div>
+
+    <div class="control">
+      <div class="label">
+        <span>Pixel size</span>
+        <span id="pixelValue">14 px</span>
+      </div>
+
+      <input
+        type="range"
+        id="pixelSize"
+        min="4"
+        max="36"
+        value="14"
+      >
+    </div>
+
+    <div class="control">
+      <div class="label">
+        <span>Input</span>
+        <span>Live / Image</span>
+      </div>
+
+      <div class="buttons">
+        <button class="primary" id="startCamera">
+          Start Camera
+        </button>
+
+        <label class="upload" for="upload">
+          Upload Image
+        </label>
+
+        <input
+          type="file"
+          id="upload"
+          accept="image/*"
+        >
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button id="stopCamera" disabled>
+        Stop Camera
+      </button>
+
+      <button class="primary" id="saveImage">
+        Save Image
+      </button>
+    </div>
+
+    <div id="status">
+      Loading face detection...
+    </div>
+
+    <p>
+      Larger pixel sizes create a more abstract,
+      low-resolution portrait.
+    </p>
+
+  </section>
+</main>
+
+<video id="video" autoplay playsinline muted
+style="display:none"></video>
+
+<script type="module">
+
+import {
+  FaceDetector,
+  FilesetResolver
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+const canvas = document.getElementById("output");
+const ctx = canvas.getContext("2d");
+
+const video = document.getElementById("video");
+
+const slider = document.getElementById("pixelSize");
+const pixelValue = document.getElementById("pixelValue");
+
+const status = document.getElementById("status");
+const placeholder = document.getElementById("placeholder");
+const introStatus = document.getElementById("introStatus");
+const introArt = document.querySelector(".intro-art");
+const coverPhoto = document.getElementById("coverPhoto");
+const coverPhotoTwo = document.getElementById("coverPhotoTwo");
+const coverPhotoThree = document.getElementById("coverPhotoThree");
+const coverCaption = document.getElementById("coverCaption");
+
+let detector = null;
+let stream = null;
+let animation = null;
+let uploadedImage = null;
+
+// --------------------------------
+// LOAD FACE DETECTION
+// --------------------------------
+
+async function loadDetector() {
+
+  try {
+
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+
+    detector = await FaceDetector.createFromOptions(
+      vision,
+      {
+        baseOptions: {
+          modelAssetPath:
+          "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite"
+        },
+
+        runningMode: "VIDEO",
+        minDetectionConfidence: 0.45
+      }
+    );
+
+    status.innerText = "Ready! Start your camera or upload an image.";
+    if (!document.body.classList.contains("intro-sequencing")) {
+      introStatus.innerText = "Ready when you are — camera access is optional.";
+    }
+
+  } catch(error) {
+
+    status.innerText =
+    "Could not load face detection. Check your internet connection.";
+    introStatus.innerText = "Face detection could not load. Check your internet connection and refresh.";
+
+  }
+
+}
+
+loadDetector();
+
+// --------------------------------
+// PIXELATION FUNCTION
+// --------------------------------
+
+function pixelate(source, detections, sourceW, sourceH) {
+
+  const size = Number(slider.value);
+
+  // Fit image to canvas
+  const scale = Math.min(
+    canvas.width / sourceW,
+    canvas.height / sourceH
+  );
+
+  const w = sourceW * scale;
+  const h = sourceH * scale;
+
+  const ox = (canvas.width - w) / 2;
+  const oy = (canvas.height - h) / 2;
+
+  // Draw original image
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#78c8eb";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.drawImage(source, ox, oy, w, h);
+
+  if (!detections || detections.length === 0) {
+    return;
+  }
+
+  // Pixelate each detected face
+  detections.forEach(face => {
+
+    const box = face.boundingBox;
+
+    const faceX = ox + box.originX * scale;
+    const faceY = oy + box.originY * scale;
+
+    const faceW = box.width * scale;
+    const faceH = box.height * scale;
+
+    // Expand face area slightly
+    const x = Math.max(0, faceX - faceW * 0.13);
+    const y = Math.max(0, faceY - faceH * 0.12);
+
+    const rw = Math.min(
+      canvas.width - x,
+      faceW * 1.26
+    );
+
+    const rh = Math.min(
+      canvas.height - y,
+      faceH * 1.24
+    );
+
+    // Create low resolution image
+    const small = document.createElement("canvas");
+
+    small.width = Math.max(2, Math.ceil(rw / size));
+    small.height = Math.max(2, Math.ceil(rh / size));
+
+    const smallCtx = small.getContext("2d");
+
+    smallCtx.drawImage(
+      canvas,
+      x, y, rw, rh,
+      0, 0,
+      small.width,
+      small.height
+    );
+
+    // Apply oval face mask
+    ctx.save();
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+      x + rw / 2,
+      y + rh / 2,
+      rw * 0.51,
+      rh * 0.53,
+      0,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.clip();
+
+    // Turn off smoothing for hard square pixels
+    ctx.imageSmoothingEnabled = false;
+
+    ctx.drawImage(
+      small,
+      0, 0,
+      small.width,
+      small.height,
+      x, y, rw, rh
+    );
+
+    ctx.restore();
+
+  });
+
+  ctx.imageSmoothingEnabled = true;
+
+}
+
+function enterExperience() {
+  document.body.classList.remove("intro-active");
+}
+
+async function beginCoverSequence() {
+  const imagePaths = ["taneli.jpeg", "taneli2.jpeg", "taneli3.jpeg"];
+  const coverCanvases = [coverPhoto, coverPhotoTwo, coverPhotoThree];
+
+  try {
+    const portraits = await Promise.all(imagePaths.map(path => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = path;
+    })));
+
+    const previewWidth = Math.max(320, Math.round(introArt.clientWidth));
+    const previewHeight = Math.max(240, Math.round(introArt.clientHeight));
+
+    portraits.forEach((portrait, index) => {
+      const lowResolution = document.createElement("canvas");
+      lowResolution.width = 36;
+      lowResolution.height = 28;
+
+      const lowContext = lowResolution.getContext("2d");
+      const scale = Math.max(
+        lowResolution.width / portrait.naturalWidth,
+        lowResolution.height / portrait.naturalHeight
+      );
+      const width = portrait.naturalWidth * scale;
+      const height = portrait.naturalHeight * scale;
+
+      lowContext.drawImage(
+        portrait,
+        (lowResolution.width - width) / 2,
+        (lowResolution.height - height) / 2,
+        width,
+        height
+      );
+
+      const target = coverCanvases[index];
+      target.width = previewWidth;
+      target.height = previewHeight;
+      const context = target.getContext("2d");
+      context.imageSmoothingEnabled = false;
+      context.drawImage(lowResolution, 0, 0, previewWidth, previewHeight);
+    });
+
+    let activeIndex = 0;
+    coverCanvases[activeIndex].classList.add("is-active");
+    coverCaption.innerText = imagePaths[activeIndex];
+
+    let flashes = 0;
+    const flashTimer = window.setInterval(() => {
+      coverCanvases[activeIndex].classList.remove("is-active");
+      activeIndex = (activeIndex + 1) % coverCanvases.length;
+      coverCanvases[activeIndex].classList.add("is-active");
+      coverCaption.innerText = imagePaths[activeIndex];
+      flashes += 1;
+
+      if (flashes >= coverCanvases.length * 3) {
+        window.clearInterval(flashTimer);
+        document.body.classList.remove("intro-sequencing");
+        document.getElementById("introCamera").disabled = false;
+        document.getElementById("introUpload").disabled = false;
+        introStatus.innerText = "Ready — choose Open camera to allow camera access, or use a photo.";
+      }
+    }, 550);
+  } catch(error) {
+    document.body.classList.remove("intro-sequencing");
+    document.getElementById("introCamera").disabled = false;
+    document.getElementById("introUpload").disabled = false;
+    introStatus.innerText = "Ready — choose Open camera or use a photo.";
+  }
+}
+
+beginCoverSequence();
+
+// --------------------------------
+// LIVE CAMERA
+// --------------------------------
+
+async function startCamera() {
+
+  try {
+
+    if (!detector) {
+      status.innerText = "Face detector is still loading.";
+      introStatus.innerText = "Face detector is loading — please try again in a moment.";
+      return;
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user"
+      },
+      audio: false
+    });
+
+    video.srcObject = stream;
+
+    await video.play();
+
+    uploadedImage = null;
+    enterExperience();
+
+    placeholder.style.display = "none";
+
+    document.getElementById("startCamera").disabled = true;
+    document.getElementById("stopCamera").disabled = false;
+
+    status.innerText = "Camera active — face detection running.";
+
+    cancelAnimationFrame(animation);
+
+    renderCamera();
+
+  } catch(error) {
+
+    status.innerText =
+    error.message || "Please allow camera access.";
+    introStatus.innerText = error.message || "Camera access was unavailable. You can choose a photo instead.";
+
+  }
+
+}
+
+function renderCamera() {
+
+  if (
+    stream &&
+    video.readyState >= 2 &&
+    detector
+  ) {
+
+    const results = detector.detectForVideo(
+      video,
+      performance.now()
+    );
+
+    pixelate(
+      video,
+      results.detections,
+      video.videoWidth,
+      video.videoHeight
+    );
+
+  }
+
+  animation = requestAnimationFrame(renderCamera);
+
+}
+
+// --------------------------------
+// UPLOAD IMAGE
+// --------------------------------
+
+function processUpload(file) {
+
+  const img = new Image();
+
+  img.onload = () => {
+
+    uploadedImage = img;
+    enterExperience();
+
+    placeholder.style.display = "none";
+
+    const results = detector.detect(img);
+
+    pixelate(
+      img,
+      results.detections,
+      img.naturalWidth,
+      img.naturalHeight
+    );
+
+    status.innerText = "Image processed successfully.";
+
+  };
+
+  img.src = URL.createObjectURL(file);
+
+}
+
+// --------------------------------
+// SLIDER
+// --------------------------------
+
+slider.addEventListener("input", () => {
+
+  pixelValue.innerText = slider.value + " px";
+
+  if (uploadedImage && detector) {
+
+    const results = detector.detect(uploadedImage);
+
+    pixelate(
+      uploadedImage,
+      results.detections,
+      uploadedImage.naturalWidth,
+      uploadedImage.naturalHeight
+    );
+
+  }
+
+});
+
+// --------------------------------
+// BUTTONS
+// --------------------------------
+
+document.getElementById("startCamera")
+.addEventListener("click", startCamera);
+
+document.getElementById("introCamera")
+.addEventListener("click", startCamera);
+
+document.getElementById("introUpload")
+.addEventListener("click", () => {
+  document.getElementById("upload").click();
+});
+
+document.getElementById("stopCamera")
+.addEventListener("click", () => {
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+
+  stream = null;
+
+  cancelAnimationFrame(animation);
+
+  document.getElementById("startCamera").disabled = false;
+  document.getElementById("stopCamera").disabled = true;
+
+  status.innerText = "Camera stopped.";
+
+});
+
+document.getElementById("upload")
+.addEventListener("change", event => {
+
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  if (!detector) {
+    introStatus.innerText = "Face detector is still loading. Please choose the photo again in a moment.";
+    return;
+  }
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+    cancelAnimationFrame(animation);
+  }
+
+  document.getElementById("startCamera").disabled = false;
+  document.getElementById("stopCamera").disabled = true;
+
+  processUpload(file);
+
+});
+
+document.getElementById("saveImage")
+.addEventListener("click", () => {
+
+  const link = document.createElement("a");
+
+  link.download = "pixelated-face.png";
+
+  link.href = canvas.toDataURL("image/png");
+
+  link.click();
+
+});
+
+</script>
+
+</body>
+</html>
